@@ -3,8 +3,8 @@ import fs from 'fs'
 const exampleConfig = `
 reminder:
   google:
-    credentials_path: "/home/casas/matrixreminders/credentials.json"
-    token_path: "/home/casas/matrixreminders/token.json"
+    credentials_path: "./google/client_secret.example.json"
+    token_path: "./token.json"
     calendar_id: "primary"
     timezone: "America/New_York"
   

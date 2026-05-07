@@ -40,7 +40,7 @@ reminder:
 ### 3. Run the Bot
 
 ```bash
-cd /home/casas/matrixreminders
+cd matrixreminders
 npm install
 npm start
 ```
