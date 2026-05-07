@@ -1,0 +1,15 @@
+reminder:
+  google:
+    credentials_path: "./google/client_secret.example.json"
+    token_path: "./token.json"
+    calendar_id: "primary"
+    timezone: "Europe/Berlin"
+  
+  matrix:
+    homeserver: "https://matrix.example.org"
+    access_token: "syt_YOUR_ACCESS_TOKEN_HERE"
+    room_id: "!yourRoomId:example.org"
+  
+  summary:
+    time: "08:00"
+    timezone: "America/New_York"

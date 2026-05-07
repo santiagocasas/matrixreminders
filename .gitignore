@@ -1,0 +1,14 @@
+node_modules/
+dist/
+logs/
+data/
+google/*.json
+config.yaml
+.matrix_access_token
+token.json
+*secret*.json
+*credentials*.json
+*:Zone.Identifier
+scripts/exchange_code_tmp.js
+*.log
+.DS_Store
