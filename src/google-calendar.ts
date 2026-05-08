@@ -72,11 +72,11 @@ export class GoogleCalendarWrapper {
         summary,
         description,
         start: {
-          dateTime: startTime.toISOString(),
+          dateTime: this.formatCalendarDateTime(startTime),
           timeZone: this.config.timezone || 'UTC'
         },
         end: {
-          dateTime: endTime.toISOString(),
+          dateTime: this.formatCalendarDateTime(endTime),
           timeZone: this.config.timezone || 'UTC'
         },
         ...(options.attendees?.length ? { attendees: options.attendees.map((email) => ({ email })) } : {}),
@@ -119,6 +119,16 @@ export class GoogleCalendarWrapper {
       logger.error({ error }, 'Failed to get calendar events')
       return []
     }
+  }
+
+  private formatCalendarDateTime(date: Date): string {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const hour = String(date.getHours()).padStart(2, '0')
+    const minute = String(date.getMinutes()).padStart(2, '0')
+    const second = String(date.getSeconds()).padStart(2, '0')
+    return `${year}-${month}-${day}T${hour}:${minute}:${second}`
   }
 
   async findEventsByTitleFragment(fragment: string, startTime: Date, endTime: Date): Promise<CalendarEvent[]> {
