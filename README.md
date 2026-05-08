@@ -58,6 +58,8 @@ Remind me to call John tomorrow at 3pm
 Remind me on 11.05 to make an HNO appointment
 REMINDER: 11.05 09:00 make an HNO appointment
 EVENT: dentist 11.05 14:30
+EVENT: project sync 11.05 14:30 invite maria@example.com
+MEET: project sync 11.05 14:30 invite maria@example.com
 #save Meeting with Sarah next Friday at 10am
 DONE: make an HNO appointment
 ```
@@ -65,6 +67,8 @@ DONE: make an HNO appointment
 The bot will parse these and create calendar events. Reminders also go into the pending-reminder store, so the bot can nudge until you reply with `DONE: <title>`.
 
 Dates can be natural language (`tomorrow`, `next Monday`) or European numeric dates (`DD.MM`, `DD.MM.YYYY`). If a reminder has no time, it defaults to `09:00`.
+
+Use `invite <email>` on `EVENT:` to send a Google Calendar invitation. Use `MEET:` with `invite <email>` to create a Google Meet link and send the invitation. Multiple emails can be separated with spaces or commas.
 
 ## Daily Summary
 

@@ -1,5 +1,6 @@
 export type Intent =
   | 'event'
+  | 'meet'
   | 'reminder'
   | 'delete'
   | 'done'
@@ -28,6 +29,7 @@ export function detectIntent(message: string): Intent {
   if (lower === 'today' || lower === '!today') return 'today'
   if (lower === 'week' || lower === '!week' || lower === 'this week') return 'week'
   if (lower === 'help' || lower === '!help') return 'help'
+  if (lower.startsWith('meet:') || lower.startsWith('meet ')) return 'meet'
   if (lower.startsWith('event:') || lower.startsWith('event ')) return 'event'
   if (lower.startsWith('reminder:') || lower.startsWith('reminder ')) return 'reminder'
   if (lower.startsWith('remind:') || lower.startsWith('remind ')) return 'reminder'

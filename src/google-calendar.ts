@@ -11,6 +11,12 @@ export interface CalendarEvent {
   start: { date?: string; dateTime: string; timeZone: string }
   end: { date?: string; dateTime: string; timeZone: string }
   htmlLink: string
+  hangoutLink?: string
+}
+
+export interface CreateEventOptions {
+  attendees?: string[]
+  createMeet?: boolean
 }
 
 export class GoogleCalendarWrapper {
@@ -58,7 +64,8 @@ export class GoogleCalendarWrapper {
     summary: string,
     description: string,
     startTime: Date,
-    endTime: Date
+    endTime: Date,
+    options: CreateEventOptions = {}
   ): Promise<CalendarEvent | null> {
     try {
       const event = {
@@ -71,12 +78,22 @@ export class GoogleCalendarWrapper {
         end: {
           dateTime: endTime.toISOString(),
           timeZone: this.config.timezone || 'UTC'
-        }
+        },
+        ...(options.attendees?.length ? { attendees: options.attendees.map((email) => ({ email })) } : {}),
+        ...(options.createMeet ? {
+          conferenceData: {
+            createRequest: {
+              requestId: `meet-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+            }
+          }
+        } : {})
       }
 
       const res = await this.calendar.events.insert({
         calendarId: this.config.calendar_id,
-        resource: event
+        resource: event,
+        sendUpdates: options.attendees?.length ? 'all' : 'none',
+        conferenceDataVersion: options.createMeet ? 1 : 0
       })
 
       logger.info(`Event created: ${res.data.htmlLink}`)

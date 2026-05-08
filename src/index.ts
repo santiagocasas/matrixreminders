@@ -124,7 +124,10 @@ async function main() {
           return
         }
 
-        const parsed = parser.parse(message, {
+        const invitation = intent === 'event' || intent === 'meet'
+          ? extractInvitation(message)
+          : { message, attendees: [] }
+        const parsed = parser.parse(invitation.message, {
           defaultTomorrowIfMissing: intent === 'reminder'
         })
 
@@ -147,7 +150,11 @@ async function main() {
           parsed.title,
           `Type: ${intent}. From ${sender}. Original: ${message}`,
           parsed.startTime,
-          parsed.endTime
+          parsed.endTime,
+          {
+            attendees: invitation.attendees,
+            createMeet: intent === 'meet'
+          }
         )
 
         if (!eventResult) {
@@ -155,9 +162,14 @@ async function main() {
           return
         }
 
-        if (intent === 'event') {
+        if (intent === 'event' || intent === 'meet') {
+          const details = [
+            `${intent === 'meet' ? '🎥 Meet event created' : '📅 Event created'}: ${parsed.title} on ${parsed.startTime.toLocaleDateString('de-DE')} at ${parsed.startTime.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`
+          ]
+          if (invitation.attendees.length > 0) details.push(`Invited: ${invitation.attendees.join(', ')}`)
+          if (eventResult.hangoutLink) details.push(`Meet: ${eventResult.hangoutLink}`)
           await matrixClient.sendMessage(
-            `📅 Event created: ${parsed.title} on ${parsed.startTime.toLocaleDateString('de-DE')} at ${parsed.startTime.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`
+            details.join('\n')
           )
         } else {
           // reminder - add to pending store for nudging
@@ -257,6 +269,20 @@ function formatLocalDate(d: Date): string {
   const m = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
   return `${y}-${m}-${day}`
+}
+
+function extractInvitation(message: string): { message: string; attendees: string[] } {
+  const emailRegex = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi
+  const inviteMatch = message.match(/\binvite\b[\s:]+(.+)$/i)
+  if (!inviteMatch) return { message, attendees: [] }
+
+  const attendees = Array.from(new Set(inviteMatch[1].match(emailRegex) || []))
+  if (attendees.length === 0) return { message, attendees: [] }
+
+  return {
+    message: message.slice(0, inviteMatch.index).trim(),
+    attendees
+  }
 }
 
 function getTodayRange() {

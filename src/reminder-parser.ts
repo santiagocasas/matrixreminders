@@ -70,6 +70,7 @@ export class ReminderParser {
   private normalizeCommandPrefix(message: string): string {
     let m = message.trim()
     m = m.replace(/^#save\s+/i, '')
+    m = m.replace(/^meet\s*:?\s+/i, '')
     m = m.replace(/^event\s*:?\s+/i, '')
     m = m.replace(/^reminder\s*:?\s+/i, '')
     m = m.replace(/^remind\s*:\s+/i, '')
