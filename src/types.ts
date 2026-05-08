@@ -34,6 +34,7 @@ export interface IConfig {
     summary: {
       time: string
       timezone: string
+      enabled?: boolean
     }
   }
 }

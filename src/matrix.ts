@@ -1,6 +1,7 @@
 import { MatrixClient } from 'matrix-bot-sdk'
 import logger from './logger'
 import { IConfig, ReminderMatrixConfig } from './types'
+import { PendingReminder } from './pending-store'
 
 export class MatrixClientWrapper {
   private client!: MatrixClient
@@ -48,6 +49,37 @@ export class MatrixClientWrapper {
     await this.sendMessage(message)
   }
 
+  async sendMorningBriefing(dateLabel: string, events: any[], reminders: PendingReminder[]): Promise<void> {
+    const lines = [`Good morning! Here's your deterministic briefing for ${dateLabel}:`, '']
+
+    lines.push('Work Hours')
+    lines.push('Handled separately in the work-hours bot.')
+    lines.push('')
+
+    lines.push('Reminders')
+    if (reminders.length === 0) {
+      lines.push('No reminders due today.')
+    } else {
+      reminders.forEach((reminder) => {
+        lines.push(`- ${reminder.title} (reply DONE: ${reminder.title} when complete)`)
+      })
+    }
+    lines.push('')
+
+    lines.push('Schedule')
+    if (events.length === 0) {
+      lines.push('No calendar events today.')
+    } else {
+      events.forEach((event) => {
+        const time = this.formatEventStart(event.start || {})
+        lines.push(`- ${time}: ${event.summary || '(no title)'}`)
+        if (event.location) lines.push(`  Location: ${event.location}`)
+      })
+    }
+
+    await this.sendMessage(lines.join('\n'))
+  }
+
   async sendTodayAgenda(events: any[]): Promise<void> {
     const message = this.formatCalendarAgenda('📅 Today', events)
     await this.sendMessage(message)
@@ -63,9 +95,15 @@ export class MatrixClientWrapper {
       [
         'Reminders + calendar help',
         '',
-        'Natural language examples:',
+        'Reminder syntax:',
         '- Remind me to send the invoice tomorrow at 14:00',
-        '- Event: trip to Berlin 09.05 to 11.05',
+        '- Remind me on 11.05 to make an HNO appointment',
+        '- REMINDER: 11.05 09:00 make an HNO appointment',
+        '- DONE: make an HNO appointment',
+        '',
+        'Calendar syntax:',
+        '- EVENT: dentist 11.05 14:30',
+        '- EVENT: trip to Berlin 09.05 to 11.05',
         '- What\'s on today?',
         '- What\'s on this week?',
         '',
@@ -77,7 +115,9 @@ export class MatrixClientWrapper {
         '- REMINDER: <text>',
         '- DELETE: <title fragment>',
         '- #save <text>',
-        '- DONE: <title>'
+        '- DONE: <title>',
+        '',
+        'Dates: use natural dates like tomorrow/next Monday, or European dates like DD.MM / DD.MM.YYYY. If no time is given, reminders default to 09:00.'
       ].join('\n')
     )
   }

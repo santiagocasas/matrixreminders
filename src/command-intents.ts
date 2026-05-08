@@ -30,6 +30,8 @@ export function detectIntent(message: string): Intent {
   if (lower === 'help' || lower === '!help') return 'help'
   if (lower.startsWith('event:') || lower.startsWith('event ')) return 'event'
   if (lower.startsWith('reminder:') || lower.startsWith('reminder ')) return 'reminder'
+  if (lower.startsWith('remind:') || lower.startsWith('remind ')) return 'reminder'
+  if (lower.startsWith('remind me ')) return 'reminder'
   if (lower.startsWith('delete:') || lower.startsWith('delete ')) return 'delete'
   if (lower.startsWith('#save ')) return 'reminder'
   if (lower.startsWith('done:')) return 'done'

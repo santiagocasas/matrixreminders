@@ -11,5 +11,6 @@ reminder:
     room_id: "!yourRoomId:example.org"
   
   summary:
+    enabled: true
     time: "08:00"
-    timezone: "America/New_York"
+    timezone: "Europe/Berlin"

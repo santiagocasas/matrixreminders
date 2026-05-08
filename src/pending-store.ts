@@ -93,6 +93,10 @@ export class PendingReminderStore {
     return this.load().reminders.filter((r) => r.active && r.dueDate === localDate)
   }
 
+  active(): PendingReminder[] {
+    return this.load().reminders.filter((r) => r.active)
+  }
+
   overdueAndNudgeable(): PendingReminder[] {
     const now = new Date()
     const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000)

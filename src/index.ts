@@ -178,7 +178,7 @@ async function main() {
       }
     })
 
-    scheduleDailySummary(config, calendarClient, matrixClient)
+    scheduleDailySummary(config, calendarClient, pendingStore, matrixClient)
     schedulePendingNudges(config, pendingStore, matrixClient)
   } catch (error) {
     logger.error({ error }, 'Failed to start reminder bot')
@@ -267,6 +267,76 @@ function getTodayRange() {
   return { start, end }
 }
 
+function getDayRangeInTimeZone(timezone: string) {
+  const now = new Date()
+  const parts = getDateParts(now, timezone)
+  const start = zonedTimeToUtc(parts.year, parts.month, parts.day, 0, 0, timezone)
+  const end = zonedTimeToUtc(parts.year, parts.month, parts.day + 1, 0, 0, timezone)
+  return { start, end }
+}
+
+function zonedTimeToUtc(year: number, month: number, day: number, hour: number, minute: number, timezone: string) {
+  const utcGuess = new Date(Date.UTC(year, month - 1, day, hour, minute, 0))
+  const actual = getDateTimeParts(utcGuess, timezone)
+  const wanted = Date.UTC(year, month - 1, day, hour, minute, 0)
+  const actualAsUtc = Date.UTC(actual.year, actual.month - 1, actual.day, actual.hour, actual.minute, 0)
+  return new Date(utcGuess.getTime() - (actualAsUtc - wanted))
+}
+
+function getDateParts(date: Date, timezone: string) {
+  const parts = getDateTimeParts(date, timezone)
+  return {
+    year: parts.year,
+    month: parts.month,
+    day: parts.day
+  }
+}
+
+function getDateTimeParts(date: Date, timezone: string) {
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23'
+  })
+  const values = Object.fromEntries(formatter.formatToParts(date).map((part) => [part.type, part.value]))
+  return {
+    year: Number(values.year),
+    month: Number(values.month),
+    day: Number(values.day),
+    hour: Number(values.hour),
+    minute: Number(values.minute)
+  }
+}
+
+function getLocalDateString(date: Date, timezone: string): string {
+  const parts = getDateParts(date, timezone)
+  return `${parts.year}-${String(parts.month).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`
+}
+
+function getLocalDateLabel(date: Date, timezone: string): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: timezone,
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric'
+  }).format(date)
+}
+
+function getLocalClock(date: Date, timezone: string): string {
+  const formatter = new Intl.DateTimeFormat('en-GB', {
+    timeZone: timezone,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  })
+  return formatter.format(date)
+}
+
 function getWeekRange() {
   const start = new Date()
   start.setHours(0, 0, 0, 0)
@@ -316,22 +386,36 @@ function schedulePendingNudges(config: any, store: PendingReminderStore, matrixC
 function scheduleDailySummary(
   config: any,
   calendarClient: GoogleCalendarWrapper,
+  pendingStore: PendingReminderStore,
   matrixClient: MatrixClientWrapper
 ) {
   const summaryTime = config.reminder.summary.time || '08:00'
-  const timezone = config.reminder.summary.timezone || 'UTC'
+  const timezone = config.reminder.summary.timezone || config.reminder.google.timezone || 'UTC'
+  const enabled = config.reminder.summary.enabled !== false
+  let lastSentDate: string | null = null
 
   logger.info(`Scheduled daily summary at ${summaryTime} (${timezone})`)
 
-  setInterval(async () => {
-    const now = new Date()
-    const hour = now.getHours().toString().padStart(2, '0')
-    const minute = now.getMinutes().toString().padStart(2, '0')
+  if (!enabled) {
+    logger.info('Daily summary disabled by config')
+    return
+  }
 
-    if (`${hour}:${minute}` === summaryTime) {
-      const { start, end } = getTodayRange()
-      const events = await calendarClient.getEvents(start, end)
-      await matrixClient.sendFormattedSummary(events)
+  setInterval(async () => {
+    try {
+      const now = new Date()
+      const localClock = getLocalClock(now, timezone)
+      const localDate = getLocalDateString(now, timezone)
+
+      if (localClock === summaryTime && lastSentDate !== localDate) {
+        const { start, end } = getDayRangeInTimeZone(timezone)
+        const events = await calendarClient.getEvents(start, end)
+        const reminders = pendingStore.dueToday(localDate)
+        await matrixClient.sendMorningBriefing(getLocalDateLabel(now, timezone), events, reminders)
+        lastSentDate = localDate
+      }
+    } catch (error) {
+      logger.error({ error }, 'Daily summary failed')
     }
   }, 60000)
 }
